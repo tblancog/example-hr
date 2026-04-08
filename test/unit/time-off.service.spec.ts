@@ -43,11 +43,15 @@ describe('TimeOffService', () => {
   describe('create()', () => {
     it('computes daysRequested = 1 for a single-day request', async () => {
       mockTimeOffRepository.findOverlapping.mockResolvedValueOnce([]);
-      mockTimeOffRepository.create.mockImplementation((data: any) => Promise.resolve({ ...data, id: 'uuid-1', status: 'PENDING' }));
+      mockTimeOffRepository.create.mockImplementation((data: any) =>
+        Promise.resolve({ ...data, id: 'uuid-1', status: 'PENDING' }),
+      );
 
       const result = await timeOffService.create({
-        employeeId: 'emp-001', locationId: 'loc-nyc',
-        startDate: '2026-06-01', endDate: '2026-06-01',
+        employeeId: 'emp-001',
+        locationId: 'loc-nyc',
+        startDate: '2026-06-01',
+        endDate: '2026-06-01',
         type: 'VACATION',
       });
 
@@ -56,11 +60,15 @@ describe('TimeOffService', () => {
 
     it('computes daysRequested = 5 for a 5-day request', async () => {
       mockTimeOffRepository.findOverlapping.mockResolvedValueOnce([]);
-      mockTimeOffRepository.create.mockImplementation((data: any) => Promise.resolve({ ...data, id: 'uuid-2', status: 'PENDING' }));
+      mockTimeOffRepository.create.mockImplementation((data: any) =>
+        Promise.resolve({ ...data, id: 'uuid-2', status: 'PENDING' }),
+      );
 
       const result = await timeOffService.create({
-        employeeId: 'emp-001', locationId: 'loc-nyc',
-        startDate: '2026-06-01', endDate: '2026-06-05',
+        employeeId: 'emp-001',
+        locationId: 'loc-nyc',
+        startDate: '2026-06-01',
+        endDate: '2026-06-05',
         type: 'VACATION',
       });
 
@@ -69,11 +77,15 @@ describe('TimeOffService', () => {
 
     it('computes daysRequested correctly crossing a month boundary (Jan 29 - Feb 2 = 5 days)', async () => {
       mockTimeOffRepository.findOverlapping.mockResolvedValueOnce([]);
-      mockTimeOffRepository.create.mockImplementation((data: any) => Promise.resolve({ ...data, id: 'uuid-3', status: 'PENDING' }));
+      mockTimeOffRepository.create.mockImplementation((data: any) =>
+        Promise.resolve({ ...data, id: 'uuid-3', status: 'PENDING' }),
+      );
 
       const result = await timeOffService.create({
-        employeeId: 'emp-001', locationId: 'loc-nyc',
-        startDate: '2026-01-29', endDate: '2026-02-02',
+        employeeId: 'emp-001',
+        locationId: 'loc-nyc',
+        startDate: '2026-01-29',
+        endDate: '2026-02-02',
         type: 'VACATION',
       });
 
@@ -85,8 +97,10 @@ describe('TimeOffService', () => {
 
       await expect(
         timeOffService.create({
-          employeeId: 'emp-001', locationId: 'loc-nyc',
-          startDate: '2026-06-05', endDate: '2026-06-01',
+          employeeId: 'emp-001',
+          locationId: 'loc-nyc',
+          startDate: '2026-06-05',
+          endDate: '2026-06-01',
           type: 'VACATION',
         }),
       ).rejects.toBeInstanceOf(BadRequestException);
@@ -97,11 +111,15 @@ describe('TimeOffService', () => {
     it('throws BadRequestException for same-day request where endDate < startDate is not possible but 0-day is invalid', async () => {
       // startDate === endDate should compute to 1 day (inclusive), not 0
       mockTimeOffRepository.findOverlapping.mockResolvedValueOnce([]);
-      mockTimeOffRepository.create.mockImplementation((data: any) => Promise.resolve({ ...data, id: 'uuid-4', status: 'PENDING' }));
+      mockTimeOffRepository.create.mockImplementation((data: any) =>
+        Promise.resolve({ ...data, id: 'uuid-4', status: 'PENDING' }),
+      );
 
       const result = await timeOffService.create({
-        employeeId: 'emp-001', locationId: 'loc-nyc',
-        startDate: '2026-06-01', endDate: '2026-06-01',
+        employeeId: 'emp-001',
+        locationId: 'loc-nyc',
+        startDate: '2026-06-01',
+        endDate: '2026-06-01',
         type: 'SICK',
       });
 
@@ -113,13 +131,20 @@ describe('TimeOffService', () => {
       const { ConflictException } = await import('@nestjs/common');
 
       mockTimeOffRepository.findOverlapping.mockResolvedValueOnce([
-        { id: 'existing-1', status: 'PENDING', startDate: '2026-06-01', endDate: '2026-06-05' },
+        {
+          id: 'existing-1',
+          status: 'PENDING',
+          startDate: '2026-06-01',
+          endDate: '2026-06-05',
+        },
       ]);
 
       await expect(
         timeOffService.create({
-          employeeId: 'emp-001', locationId: 'loc-nyc',
-          startDate: '2026-06-03', endDate: '2026-06-07',
+          employeeId: 'emp-001',
+          locationId: 'loc-nyc',
+          startDate: '2026-06-03',
+          endDate: '2026-06-07',
           type: 'VACATION',
         }),
       ).rejects.toBeInstanceOf(ConflictException);
@@ -129,13 +154,20 @@ describe('TimeOffService', () => {
       const { ConflictException } = await import('@nestjs/common');
 
       mockTimeOffRepository.findOverlapping.mockResolvedValueOnce([
-        { id: 'approved-1', status: 'APPROVED', startDate: '2026-06-01', endDate: '2026-06-05' },
+        {
+          id: 'approved-1',
+          status: 'APPROVED',
+          startDate: '2026-06-01',
+          endDate: '2026-06-05',
+        },
       ]);
 
       await expect(
         timeOffService.create({
-          employeeId: 'emp-001', locationId: 'loc-nyc',
-          startDate: '2026-06-04', endDate: '2026-06-08',
+          employeeId: 'emp-001',
+          locationId: 'loc-nyc',
+          startDate: '2026-06-04',
+          endDate: '2026-06-08',
           type: 'VACATION',
         }),
       ).rejects.toBeInstanceOf(ConflictException);
@@ -148,8 +180,10 @@ describe('TimeOffService', () => {
       );
 
       const result = await timeOffService.create({
-        employeeId: 'emp-001', locationId: 'loc-nyc',
-        startDate: '2026-07-01', endDate: '2026-07-03',
+        employeeId: 'emp-001',
+        locationId: 'loc-nyc',
+        startDate: '2026-07-01',
+        endDate: '2026-07-03',
         type: 'PERSONAL',
       });
 
@@ -162,33 +196,48 @@ describe('TimeOffService', () => {
       const { ConflictException } = await import('@nestjs/common');
 
       mockTimeOffRepository.findById.mockResolvedValueOnce({
-        id: 'req-1', status: 'APPROVED', daysRequested: 3,
-        employeeId: 'emp-001', locationId: 'loc-nyc',
+        id: 'req-1',
+        status: 'APPROVED',
+        daysRequested: 3,
+        employeeId: 'emp-001',
+        locationId: 'loc-nyc',
       });
 
-      await expect(timeOffService.approve('req-1', { managerId: 'mgr-1' })).rejects.toBeInstanceOf(ConflictException);
+      await expect(
+        timeOffService.approve('req-1', { managerId: 'mgr-1' }),
+      ).rejects.toBeInstanceOf(ConflictException);
     });
 
     it('throws ConflictException when request status is CANCELLED', async () => {
       const { ConflictException } = await import('@nestjs/common');
 
       mockTimeOffRepository.findById.mockResolvedValueOnce({
-        id: 'req-1', status: 'CANCELLED', daysRequested: 3,
-        employeeId: 'emp-001', locationId: 'loc-nyc',
+        id: 'req-1',
+        status: 'CANCELLED',
+        daysRequested: 3,
+        employeeId: 'emp-001',
+        locationId: 'loc-nyc',
       });
 
-      await expect(timeOffService.approve('req-1', { managerId: 'mgr-1' })).rejects.toBeInstanceOf(ConflictException);
+      await expect(
+        timeOffService.approve('req-1', { managerId: 'mgr-1' }),
+      ).rejects.toBeInstanceOf(ConflictException);
     });
 
     it('throws ConflictException when request status is REJECTED', async () => {
       const { ConflictException } = await import('@nestjs/common');
 
       mockTimeOffRepository.findById.mockResolvedValueOnce({
-        id: 'req-1', status: 'REJECTED', daysRequested: 3,
-        employeeId: 'emp-001', locationId: 'loc-nyc',
+        id: 'req-1',
+        status: 'REJECTED',
+        daysRequested: 3,
+        employeeId: 'emp-001',
+        locationId: 'loc-nyc',
       });
 
-      await expect(timeOffService.approve('req-1', { managerId: 'mgr-1' })).rejects.toBeInstanceOf(ConflictException);
+      await expect(
+        timeOffService.approve('req-1', { managerId: 'mgr-1' }),
+      ).rejects.toBeInstanceOf(ConflictException);
     });
 
     it('throws NotFoundException when request does not exist', async () => {
@@ -196,19 +245,29 @@ describe('TimeOffService', () => {
 
       mockTimeOffRepository.findById.mockResolvedValueOnce(null);
 
-      await expect(timeOffService.approve('nonexistent-id', { managerId: 'mgr-1' })).rejects.toBeInstanceOf(NotFoundException);
+      await expect(
+        timeOffService.approve('nonexistent-id', { managerId: 'mgr-1' }),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('propagates InsufficientBalanceException when BalanceService throws it', async () => {
-      const { InsufficientBalanceException } = await import('src/common/exceptions/insufficient-balance.exception');
+      const { InsufficientBalanceException } =
+        await import('src/common/exceptions/insufficient-balance.exception');
 
       mockTimeOffRepository.findById.mockResolvedValueOnce({
-        id: 'req-1', status: 'PENDING', daysRequested: 5,
-        employeeId: 'emp-001', locationId: 'loc-nyc',
+        id: 'req-1',
+        status: 'PENDING',
+        daysRequested: 5,
+        employeeId: 'emp-001',
+        locationId: 'loc-nyc',
       });
-      mockBalanceService.checkAndDeductBalance.mockRejectedValueOnce(new InsufficientBalanceException(2, 5));
+      mockBalanceService.checkAndDeductBalance.mockRejectedValueOnce(
+        new InsufficientBalanceException(2, 5),
+      );
 
-      await expect(timeOffService.approve('req-1', { managerId: 'mgr-1' })).rejects.toBeInstanceOf(InsufficientBalanceException);
+      await expect(
+        timeOffService.approve('req-1', { managerId: 'mgr-1' }),
+      ).rejects.toBeInstanceOf(InsufficientBalanceException);
     });
   });
 
@@ -217,34 +276,50 @@ describe('TimeOffService', () => {
       const { ConflictException } = await import('@nestjs/common');
 
       mockTimeOffRepository.findById.mockResolvedValueOnce({
-        id: 'req-1', status: 'APPROVED', daysRequested: 3,
-        employeeId: 'emp-001', locationId: 'loc-nyc',
+        id: 'req-1',
+        status: 'APPROVED',
+        daysRequested: 3,
+        employeeId: 'emp-001',
+        locationId: 'loc-nyc',
       });
 
-      await expect(timeOffService.reject('req-1', { managerId: 'mgr-1' })).rejects.toBeInstanceOf(ConflictException);
+      await expect(
+        timeOffService.reject('req-1', { managerId: 'mgr-1' }),
+      ).rejects.toBeInstanceOf(ConflictException);
     });
 
     it('throws ConflictException when request is already REJECTED', async () => {
       const { ConflictException } = await import('@nestjs/common');
 
       mockTimeOffRepository.findById.mockResolvedValueOnce({
-        id: 'req-1', status: 'REJECTED', daysRequested: 3,
-        employeeId: 'emp-001', locationId: 'loc-nyc',
+        id: 'req-1',
+        status: 'REJECTED',
+        daysRequested: 3,
+        employeeId: 'emp-001',
+        locationId: 'loc-nyc',
       });
 
-      await expect(timeOffService.reject('req-1', { managerId: 'mgr-1' })).rejects.toBeInstanceOf(ConflictException);
+      await expect(
+        timeOffService.reject('req-1', { managerId: 'mgr-1' }),
+      ).rejects.toBeInstanceOf(ConflictException);
     });
 
     it('rejects successfully when request is PENDING', async () => {
       mockTimeOffRepository.findById.mockResolvedValueOnce({
-        id: 'req-1', status: 'PENDING', daysRequested: 3,
-        employeeId: 'emp-001', locationId: 'loc-nyc',
+        id: 'req-1',
+        status: 'PENDING',
+        daysRequested: 3,
+        employeeId: 'emp-001',
+        locationId: 'loc-nyc',
       });
       mockTimeOffRepository.update.mockImplementation((id: string, data: any) =>
         Promise.resolve({ id, ...data, status: 'REJECTED' }),
       );
 
-      const result = await timeOffService.reject('req-1', { managerId: 'mgr-1', reason: 'Team shortage' });
+      const result = await timeOffService.reject('req-1', {
+        managerId: 'mgr-1',
+        reason: 'Team shortage',
+      });
       expect(result.status).toBe('REJECTED');
     });
   });
@@ -254,39 +329,57 @@ describe('TimeOffService', () => {
       const { ConflictException } = await import('@nestjs/common');
 
       mockTimeOffRepository.findById.mockResolvedValueOnce({
-        id: 'req-1', status: 'APPROVED', daysRequested: 3,
-        employeeId: 'emp-001', locationId: 'loc-nyc',
+        id: 'req-1',
+        status: 'APPROVED',
+        daysRequested: 3,
+        employeeId: 'emp-001',
+        locationId: 'loc-nyc',
       });
 
-      await expect(timeOffService.cancel('req-1')).rejects.toBeInstanceOf(ConflictException);
+      await expect(timeOffService.cancel('req-1')).rejects.toBeInstanceOf(
+        ConflictException,
+      );
     });
 
     it('throws ConflictException when request is already CANCELLED', async () => {
       const { ConflictException } = await import('@nestjs/common');
 
       mockTimeOffRepository.findById.mockResolvedValueOnce({
-        id: 'req-1', status: 'CANCELLED', daysRequested: 3,
-        employeeId: 'emp-001', locationId: 'loc-nyc',
+        id: 'req-1',
+        status: 'CANCELLED',
+        daysRequested: 3,
+        employeeId: 'emp-001',
+        locationId: 'loc-nyc',
       });
 
-      await expect(timeOffService.cancel('req-1')).rejects.toBeInstanceOf(ConflictException);
+      await expect(timeOffService.cancel('req-1')).rejects.toBeInstanceOf(
+        ConflictException,
+      );
     });
 
     it('throws ConflictException when request is REJECTED', async () => {
       const { ConflictException } = await import('@nestjs/common');
 
       mockTimeOffRepository.findById.mockResolvedValueOnce({
-        id: 'req-1', status: 'REJECTED', daysRequested: 3,
-        employeeId: 'emp-001', locationId: 'loc-nyc',
+        id: 'req-1',
+        status: 'REJECTED',
+        daysRequested: 3,
+        employeeId: 'emp-001',
+        locationId: 'loc-nyc',
       });
 
-      await expect(timeOffService.cancel('req-1')).rejects.toBeInstanceOf(ConflictException);
+      await expect(timeOffService.cancel('req-1')).rejects.toBeInstanceOf(
+        ConflictException,
+      );
     });
 
     it('cancels successfully when request is PENDING', async () => {
       mockTimeOffRepository.findById.mockResolvedValueOnce({
-        id: 'req-1', status: 'PENDING', daysRequested: 3,
-        employeeId: 'emp-001', locationId: 'loc-nyc',
+        id: 'req-1',
+        status: 'PENDING',
+        daysRequested: 3,
+        employeeId: 'emp-001',
+        locationId: 'loc-nyc',
       });
       mockTimeOffRepository.update.mockImplementation((id: string, data: any) =>
         Promise.resolve({ id, ...data, status: 'CANCELLED' }),
