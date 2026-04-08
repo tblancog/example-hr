@@ -17,7 +17,8 @@
     "test:unit": "jest --projects test/jest.unit.js",
     "test:integration": "jest --projects test/jest.integration.js",
     "test:e2e": "jest --projects test/jest.e2e.js",
-    "test:coverage": "jest --projects test/jest.unit.js test/jest.integration.js test/jest.e2e.js --coverage --collectCoverageFrom='src/**/*.ts'"
+    "test:coverage": "jest --projects test/jest.unit.js test/jest.integration.js test/jest.e2e.js --coverage --collectCoverageFrom='src/**/*.ts'",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

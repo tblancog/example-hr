@@ -3,7 +3,7 @@ import { HcmService } from '../hcm/hcm.service';
 import { SyncSource, SyncTrigger } from '../common/enums';
 import { InsufficientBalanceException } from '../common/exceptions/insufficient-balance.exception';
 
-interface SyncResult {
+export interface SyncResult {
   employeeId: string;
   locationId: string;
   available: number;
@@ -14,7 +14,7 @@ interface SyncResult {
   previousAvailable: number | undefined;
 }
 
-interface ConflictRecord {
+export interface ConflictRecord {
   employeeId: string;
   locationId: string;
   hcmAvailable: number;
@@ -22,7 +22,7 @@ interface ConflictRecord {
   resolution: 'HCM_WINS';
 }
 
-interface BatchSyncResult {
+export interface BatchSyncResult {
   syncId: string;
   processed: number;
   skipped: number;

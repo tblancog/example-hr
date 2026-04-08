@@ -1,7 +1,6 @@
-import { Module } from '@nestjs/common';
+import { Module, ValidationPipe } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { APP_PIPE } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
 import { HcmModule } from './hcm/hcm.module';
 import { BalanceModule } from './balance/balance.module';
 import { TimeOffModule } from './time-off/time-off.module';
