@@ -1,98 +1,220 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# examplehr-time-off — ExampleHR Take-Home Exercise
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A NestJS + TypeORM microservice that manages employee time-off requests with HCM (Human Capital Management) integration.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## Quick Start
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
+**Requirements:** Node.js ≥ 18, pnpm ≥ 9
 
 ```bash
-$ pnpm install
+pnpm install
+pnpm start              # starts on http://localhost:3000
 ```
 
-## Compile and run the project
+**Environment variables** (all optional with sensible defaults):
+
+| Variable         | Default                 | Description                                     |
+| ---------------- | ----------------------- | ----------------------------------------------- |
+| `PORT`           | `3000`                  | HTTP port                                       |
+| `HCM_BASE_URL`   | `http://localhost:3100` | HCM system base URL                             |
+| `HCM_TIMEOUT_MS` | `5000`                  | HCM request timeout in ms                       |
+| `NODE_ENV`       | _(unset)_               | Set to `production` to disable auto-sync schema |
+
+---
+
+## Running Tests
 
 ```bash
-# development
-$ pnpm run start
-
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+pnpm test               # all suites (unit + integration + e2e)
+pnpm test:unit          # unit tests only
+pnpm test:integration   # integration tests with in-memory SQLite + HCM mock
+pnpm test:e2e           # end-to-end HTTP tests via supertest
+pnpm test:coverage      # all suites with coverage report
+pnpm typecheck          # TypeScript compilation check (no emit)
 ```
 
-## Run tests
+Coverage thresholds enforced on every run:
 
-```bash
-# unit tests
-$ pnpm run test
+| Metric     | Threshold | Current |
+| ---------- | --------- | ------- |
+| Statements | 85%       | ~91%    |
+| Branches   | 75%       | ~77%    |
+| Functions  | 85%       | ~88%    |
+| Lines      | 85%       | ~92%    |
 
-# e2e tests
-$ pnpm run test:e2e
+---
 
-# test coverage
-$ pnpm run test:cov
+## API Reference
+
+### Time-Off Requests
+
+| Method   | Path                             | Description                                                         |
+| -------- | -------------------------------- | ------------------------------------------------------------------- |
+| `POST`   | `/time-off-requests`             | Create a new PENDING request                                        |
+| `GET`    | `/time-off-requests/:id`         | Get a request by ID                                                 |
+| `GET`    | `/time-off-requests`             | List requests (filter by employeeId, locationId, status; paginated) |
+| `PATCH`  | `/time-off-requests/:id/approve` | Approve a PENDING request (deducts HCM balance)                     |
+| `PATCH`  | `/time-off-requests/:id/reject`  | Reject a PENDING request                                            |
+| `DELETE` | `/time-off-requests/:id`         | Cancel a PENDING request                                            |
+
+#### Create Request Body
+
+```json
+{
+  "employeeId": "emp-001",
+  "locationId": "loc-nyc",
+  "startDate": "2026-06-01",
+  "endDate": "2026-06-05",
+  "type": "VACATION",
+  "note": "Summer holiday"
+}
 ```
 
-## Deployment
+`type` must be one of: `VACATION`, `SICK`, `PERSONAL`  
+`note` is optional, max 500 characters.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+#### Approve / Reject Body
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ pnpm install -g mau
-$ mau deploy
+```json
+{ "managerId": "mgr-001" }
+{ "managerId": "mgr-001", "reason": "Team coverage needed" }
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+#### List Query Parameters
 
-## Resources
+| Param        | Type   | Default | Max |
+| ------------ | ------ | ------- | --- |
+| `employeeId` | string | —       | —   |
+| `locationId` | string | —       | —   |
+| `status`     | string | —       | —   |
+| `page`       | number | 1       | —   |
+| `limit`      | number | 20      | 100 |
 
-Check out a few resources that may come in handy when working with NestJS:
+### Balance
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+| Method | Path                                | Description                   |
+| ------ | ----------------------------------- | ----------------------------- |
+| `GET`  | `/balances/:employeeId/:locationId` | Get cached balance            |
+| `POST` | `/balances/sync`                    | Pull latest balance from HCM  |
+| `POST` | `/balances/batch-sync`              | Batch upsert from HCM nightly |
 
-## Support
+#### Batch Sync Body
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```json
+{
+  "syncId": "nightly-2026-06-01",
+  "balances": [
+    {
+      "employeeId": "emp-001",
+      "locationId": "loc-nyc",
+      "available": 10,
+      "used": 2,
+      "total": 12
+    }
+  ]
+}
+```
 
-## Stay in touch
+---
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## Architecture & Design Decisions
 
-## License
+### HCM as Source of Truth
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Balance data is authoritative in HCM. Approvals always perform a real-time **GET → check → SET** cycle against HCM rather than trusting the local cache. This ensures the local database reflects what HCM has committed, not what we assumed at request-creation time.
+
+### State Machine
+
+```
+PENDING → APPROVED   (balance deducted from HCM)
+PENDING → REJECTED   (no HCM interaction)
+PENDING → CANCELLED  (no HCM interaction)
+```
+
+All other transitions return `409 Conflict`. Once a request leaves PENDING it is immutable.
+
+### Race Condition Prevention
+
+Two serialization layers protect against concurrent operations:
+
+1. **Create queue** — concurrent `POST /time-off-requests` for the same `employeeId:locationId` pair are serialized in-process to prevent overlap false-negatives.
+2. **Approve queue** — concurrent approvals for the same `employeeId:locationId` are serialized in-process so the HCM GET → SET cycle cannot interleave. HCM's atomic SET is the cross-node safety net.
+
+Both queues use a `Map<key, Promise<void>>` chain — zero dependencies, single-node guarantee.
+
+### Balance Conflict Detection (Batch Sync)
+
+When HCM's batch payload shows `available < pendingDays`, the system records a conflict with `resolution: HCM_WINS` and still writes the HCM value. The response includes the full `conflicts` array so the caller can notify managers.
+
+### Idempotent Batch Sync
+
+Re-posting the same `syncId` throws `409 Conflict`. The guard is an in-memory `Set` (fast-path for the same process instance). A production deployment with multiple instances would need a dedicated `ProcessedSyncIds` table with a unique index on `syncId`.
+
+### Rate Limiting
+
+`@nestjs/throttler` enforces 100 requests per 60 seconds per IP globally via `APP_GUARD`. Adjust `ThrottlerModule.forRoot` in `AppModule` for stricter per-endpoint policies.
+
+### Authorization Design
+
+`src/common/guards/roles.guard.ts` implements header-based role checking (`X-User-Id`, `X-User-Role`). In a production deployment the API gateway strips caller-supplied identity headers and injects verified ones after JWT validation. The guard is ready to be added to individual routes with:
+
+```typescript
+@UseGuards(RolesGuard)
+@Roles('MANAGER')
+```
+
+The service layer enforces **self-approval prevention** regardless: `approve()` throws `403 Forbidden` when `managerId === employeeId`.
+
+### Input Validation
+
+- `ValidationPipe({ whitelist: true, transform: true })` strips unknown fields and transforms types globally.
+- Registered via `APP_PIPE` (DI-aware) rather than `useGlobalPipes` in `main.ts` — avoids the double-registration bug.
+- `note` field: max 500 characters.
+- `limit` query param: capped at 100 to prevent unbounded table scans.
+
+### Database
+
+SQLite (via `better-sqlite3`) with TypeORM. Schema is auto-synchronized in non-production environments (`synchronize: process.env.NODE_ENV !== 'production'`). Production deployments should use explicit TypeORM migrations.
+
+---
+
+## Project Structure
+
+```
+src/
+  app.module.ts              # Root module: TypeORM, ThrottlerModule, APP_PIPE, APP_GUARD
+  main.ts                    # Bootstrap only — no duplicate pipes
+  common/
+    decorators/
+      roles.decorator.ts     # @Roles(...) metadata setter
+    enums.ts                 # TimeOffType, RequestStatus, SyncSource, SyncTrigger
+    exceptions/              # Domain exceptions: HcmUnavailable, InsufficientBalance, InvalidDimension
+    guards/
+      roles.guard.ts         # Header-based role guard (X-User-Role)
+    interfaces/
+      repository.interfaces.ts  # IBalanceRepository, ISyncLogRepository, ITimeOffRepository
+  hcm/
+    hcm.service.ts           # Fetch wrapper with AbortController timeout
+    hcm.module.ts            # HCM_CONFIG provider (baseUrl, timeoutMs from env)
+  balance/
+    balance.entity.ts        # Balance cache table
+    balance.repository.ts    # findByEmployeeLocation, upsert, findPendingDays
+    balance.service.ts       # syncFromHcm, checkAndDeductBalance, batchSync
+    balance.controller.ts
+    sync-log.entity.ts       # Audit trail for all balance changes
+    sync-log.repository.ts
+  time-off/
+    time-off.entity.ts
+    time-off.repository.ts   # findOverlapping, findByFilters with pagination
+    time-off.service.ts      # create (with overlap queue), approve (with approve queue)
+    time-off.controller.ts
+    dto/                     # class-validator DTOs
+
+test/
+  unit/                      # Mocked dependencies, fast
+  integration/               # Real SQLite in-memory, HCM mock HTTP server
+  e2e/                       # Full NestJS app + supertest HTTP requests
+  hcm-mock/                  # Configurable HCM mock server used by integration/e2e
+```
