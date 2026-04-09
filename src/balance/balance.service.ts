@@ -1,4 +1,9 @@
-import { Injectable, Inject, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { HcmService } from '../hcm/hcm.service';
 import { SyncSource, SyncTrigger } from '../common/enums';
 import { InsufficientBalanceException } from '../common/exceptions/insufficient-balance.exception';
@@ -39,10 +44,16 @@ export class BalanceService {
     @Inject('SYNC_LOG_REPOSITORY') private readonly syncLogRepository: any,
   ) {}
 
-  async syncFromHcm(employeeId: string, locationId: string): Promise<SyncResult> {
+  async syncFromHcm(
+    employeeId: string,
+    locationId: string,
+  ): Promise<SyncResult> {
     const hcmBalance = await this.hcmService.getBalance(employeeId, locationId);
 
-    const existing = await this.balanceRepository.findByEmployeeLocation(employeeId, locationId);
+    const existing = await this.balanceRepository.findByEmployeeLocation(
+      employeeId,
+      locationId,
+    );
     const previousAvailable: number | undefined = existing?.available;
     const lastSyncedAt = new Date();
 
@@ -76,11 +87,18 @@ export class BalanceService {
     };
   }
 
-  async checkAndDeductBalance(employeeId: string, locationId: string, daysRequested: number): Promise<void> {
+  async checkAndDeductBalance(
+    employeeId: string,
+    locationId: string,
+    daysRequested: number,
+  ): Promise<void> {
     const hcmBalance = await this.hcmService.getBalance(employeeId, locationId);
 
     if (hcmBalance.available < daysRequested) {
-      throw new InsufficientBalanceException(hcmBalance.available, daysRequested);
+      throw new InsufficientBalanceException(
+        hcmBalance.available,
+        daysRequested,
+      );
     }
 
     const newBalance = {
@@ -89,7 +107,11 @@ export class BalanceService {
       total: hcmBalance.total,
     };
 
-    const confirmedBalance = await this.hcmService.setBalance(employeeId, locationId, newBalance);
+    const confirmedBalance = await this.hcmService.setBalance(
+      employeeId,
+      locationId,
+      newBalance,
+    );
     const lastSyncedAt = new Date();
 
     await this.balanceRepository.upsert({
@@ -112,14 +134,22 @@ export class BalanceService {
   }
 
   async getBalance(employeeId: string, locationId: string): Promise<any> {
-    const balance = await this.balanceRepository.findByEmployeeLocation(employeeId, locationId);
+    const balance = await this.balanceRepository.findByEmployeeLocation(
+      employeeId,
+      locationId,
+    );
     if (!balance) {
-      throw new NotFoundException(`No balance record found for ${employeeId}/${locationId}`);
+      throw new NotFoundException(
+        `No balance record found for ${employeeId}/${locationId}`,
+      );
     }
     return balance;
   }
 
-  async batchSync(payload: { syncId: string; balances: any[] }): Promise<BatchSyncResult> {
+  async batchSync(payload: {
+    syncId: string;
+    balances: any[];
+  }): Promise<BatchSyncResult> {
     const { syncId, balances } = payload;
 
     if (this.processedSyncIds.has(syncId)) {
@@ -137,7 +167,11 @@ export class BalanceService {
     for (const item of balances) {
       const { employeeId, locationId, available, used, total } = item;
 
-      const pendingDays = await this.balanceRepository.findPendingDaysForEmployeeLocation(employeeId, locationId);
+      const pendingDays =
+        await this.balanceRepository.findPendingDaysForEmployeeLocation(
+          employeeId,
+          locationId,
+        );
 
       if (pendingDays > available) {
         conflicts.push({
@@ -165,7 +199,10 @@ export class BalanceService {
         locationId,
         newAvailable: available,
         trigger: SyncTrigger.BATCH,
-        conflictNotes: conflicts.length > 0 ? JSON.stringify(conflicts[conflicts.length - 1]) : undefined,
+        conflictNotes:
+          conflicts.length > 0
+            ? JSON.stringify(conflicts[conflicts.length - 1])
+            : undefined,
       });
     }
 

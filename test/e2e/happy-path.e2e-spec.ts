@@ -45,7 +45,13 @@ describe('Happy Path E2E', () => {
 
   describe('Full lifecycle: create → approve → check balance', () => {
     it('POST 201 → PATCH approve 200 → GET balance shows decremented value', async () => {
-      seedBalance(mock, { employeeId: 'emp-e2e-01', locationId: 'loc-nyc', available: 10, used: 2, total: 12 });
+      seedBalance(mock, {
+        employeeId: 'emp-e2e-01',
+        locationId: 'loc-nyc',
+        available: 10,
+        used: 2,
+        total: 12,
+      });
 
       // Step 1: Create request
       const createRes = await request(httpServer)
@@ -83,8 +89,9 @@ describe('Happy Path E2E', () => {
       expect(approved.id).toBe(created.id);
 
       // Step 3: Check balance shows decremented value
-      const balanceRes = await request(httpServer)
-        .get('/balances/emp-e2e-01/loc-nyc');
+      const balanceRes = await request(httpServer).get(
+        '/balances/emp-e2e-01/loc-nyc',
+      );
 
       expect(balanceRes.status).toBe(200);
       const balance: BalanceDto = balanceRes.body;
@@ -101,12 +108,17 @@ describe('Happy Path E2E', () => {
       const createRes = await request(httpServer)
         .post('/time-off-requests')
         .send({
-          employeeId: 'emp-shape-test', locationId: 'loc-la',
-          startDate: '2026-07-01', endDate: '2026-07-02',
-          type: 'SICK', note: 'Feeling unwell',
+          employeeId: 'emp-shape-test',
+          locationId: 'loc-la',
+          startDate: '2026-07-01',
+          endDate: '2026-07-02',
+          type: 'SICK',
+          note: 'Feeling unwell',
         });
 
-      const getRes = await request(httpServer).get(`/time-off-requests/${createRes.body.id}`);
+      const getRes = await request(httpServer).get(
+        `/time-off-requests/${createRes.body.id}`,
+      );
 
       expect(getRes.status).toBe(200);
       const dto: TimeOffRequestDto = getRes.body;
@@ -124,17 +136,27 @@ describe('Happy Path E2E', () => {
     });
 
     it('GET /time-off-requests/:id returns 404 for unknown UUID', async () => {
-      const res = await request(httpServer).get('/time-off-requests/00000000-0000-0000-0000-000000000000');
+      const res = await request(httpServer).get(
+        '/time-off-requests/00000000-0000-0000-0000-000000000000',
+      );
       expect(res.status).toBe(404);
     });
 
     it('GET /balances/:employeeId/:locationId returns all required fields', async () => {
-      seedBalance(mock, { employeeId: 'emp-bal-shape', locationId: 'loc-nyc', available: 5, used: 5, total: 10 });
+      seedBalance(mock, {
+        employeeId: 'emp-bal-shape',
+        locationId: 'loc-nyc',
+        available: 5,
+        used: 5,
+        total: 10,
+      });
       await request(httpServer)
         .post('/balances/sync')
         .send({ employeeId: 'emp-bal-shape', locationId: 'loc-nyc' });
 
-      const res = await request(httpServer).get('/balances/emp-bal-shape/loc-nyc');
+      const res = await request(httpServer).get(
+        '/balances/emp-bal-shape/loc-nyc',
+      );
       expect(res.status).toBe(200);
       const dto: BalanceDto = res.body;
       expect(dto).toHaveProperty('employeeId');
@@ -157,33 +179,33 @@ describe('Happy Path E2E', () => {
     });
 
     it('returns 400 when endDate is before startDate', async () => {
-      const res = await request(httpServer)
-        .post('/time-off-requests')
-        .send({
-          employeeId: 'emp-001', locationId: 'loc-nyc',
-          startDate: '2026-06-10', endDate: '2026-06-05',
-          type: 'VACATION',
-        });
+      const res = await request(httpServer).post('/time-off-requests').send({
+        employeeId: 'emp-001',
+        locationId: 'loc-nyc',
+        startDate: '2026-06-10',
+        endDate: '2026-06-05',
+        type: 'VACATION',
+      });
 
       expect(res.status).toBe(400);
     });
 
     it('returns 409 when a request overlaps an existing PENDING request', async () => {
-      await request(httpServer)
-        .post('/time-off-requests')
-        .send({
-          employeeId: 'emp-409', locationId: 'loc-nyc',
-          startDate: '2026-06-01', endDate: '2026-06-05',
-          type: 'VACATION',
-        });
+      await request(httpServer).post('/time-off-requests').send({
+        employeeId: 'emp-409',
+        locationId: 'loc-nyc',
+        startDate: '2026-06-01',
+        endDate: '2026-06-05',
+        type: 'VACATION',
+      });
 
-      const res = await request(httpServer)
-        .post('/time-off-requests')
-        .send({
-          employeeId: 'emp-409', locationId: 'loc-nyc',
-          startDate: '2026-06-03', endDate: '2026-06-07', // overlaps
-          type: 'VACATION',
-        });
+      const res = await request(httpServer).post('/time-off-requests').send({
+        employeeId: 'emp-409',
+        locationId: 'loc-nyc',
+        startDate: '2026-06-03',
+        endDate: '2026-06-07', // overlaps
+        type: 'VACATION',
+      });
 
       expect(res.status).toBe(409);
     });

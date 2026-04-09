@@ -50,7 +50,12 @@ export class TimeOffService {
     const key = `${dto.employeeId}:${dto.locationId}`;
     const current = this.createQueue.get(key) ?? Promise.resolve();
     let release!: () => void;
-    this.createQueue.set(key, new Promise<void>((res) => { release = res; }));
+    this.createQueue.set(
+      key,
+      new Promise<void>((res) => {
+        release = res;
+      }),
+    );
 
     try {
       await current;
@@ -62,7 +67,9 @@ export class TimeOffService {
         dto.endDate,
       );
       if (overlapping.length > 0) {
-        throw new ConflictException('A conflicting time-off request already exists for these dates');
+        throw new ConflictException(
+          'A conflicting time-off request already exists for these dates',
+        );
       }
 
       const daysRequested = computeDays(dto.startDate, dto.endDate);
@@ -76,11 +83,17 @@ export class TimeOffService {
     }
   }
 
-  async approve(id: string, dto: { managerId: string }): Promise<TimeOffRequestEntity> {
+  async approve(
+    id: string,
+    dto: { managerId: string },
+  ): Promise<TimeOffRequestEntity> {
     const request = await this.timeOffRepository.findById(id);
-    if (!request) throw new NotFoundException(`Time-off request ${id} not found`);
+    if (!request)
+      throw new NotFoundException(`Time-off request ${id} not found`);
     if (request.status !== RequestStatus.PENDING) {
-      throw new ConflictException(`Cannot approve a request with status ${request.status}`);
+      throw new ConflictException(
+        `Cannot approve a request with status ${request.status}`,
+      );
     }
 
     await this.balanceService.checkAndDeductBalance(
@@ -95,11 +108,17 @@ export class TimeOffService {
     });
   }
 
-  async reject(id: string, dto: { managerId: string; reason?: string }): Promise<TimeOffRequestEntity> {
+  async reject(
+    id: string,
+    dto: { managerId: string; reason?: string },
+  ): Promise<TimeOffRequestEntity> {
     const request = await this.timeOffRepository.findById(id);
-    if (!request) throw new NotFoundException(`Time-off request ${id} not found`);
+    if (!request)
+      throw new NotFoundException(`Time-off request ${id} not found`);
     if (request.status !== RequestStatus.PENDING) {
-      throw new ConflictException(`Cannot reject a request with status ${request.status}`);
+      throw new ConflictException(
+        `Cannot reject a request with status ${request.status}`,
+      );
     }
 
     return this.timeOffRepository.update(id, {
@@ -111,23 +130,32 @@ export class TimeOffService {
 
   async cancel(id: string): Promise<TimeOffRequestEntity> {
     const request = await this.timeOffRepository.findById(id);
-    if (!request) throw new NotFoundException(`Time-off request ${id} not found`);
+    if (!request)
+      throw new NotFoundException(`Time-off request ${id} not found`);
     if (request.status !== RequestStatus.PENDING) {
-      throw new ConflictException(`Cannot cancel a request with status ${request.status}`);
+      throw new ConflictException(
+        `Cannot cancel a request with status ${request.status}`,
+      );
     }
 
-    return this.timeOffRepository.update(id, { status: RequestStatus.CANCELLED });
+    return this.timeOffRepository.update(id, {
+      status: RequestStatus.CANCELLED,
+    });
   }
 
   async findById(id: string): Promise<TimeOffRequestEntity> {
     const request = await this.timeOffRepository.findById(id);
-    if (!request) throw new NotFoundException(`Time-off request ${id} not found`);
+    if (!request)
+      throw new NotFoundException(`Time-off request ${id} not found`);
     return request;
   }
 
-  async findAll(
-    filters: FindAllFilters,
-  ): Promise<{ data: TimeOffRequestEntity[]; total: number; page: number; limit: number }> {
+  async findAll(filters: FindAllFilters): Promise<{
+    data: TimeOffRequestEntity[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
     const page = filters.page ?? 1;
     const limit = filters.limit ?? 20;
     const [data, total] = await Promise.all([

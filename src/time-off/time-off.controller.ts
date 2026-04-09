@@ -54,7 +54,10 @@ export class TimeOffController {
 
   @Patch(':id/reject')
   reject(@Param('id') id: string, @Body() dto: RejectDto) {
-    return this.timeOffService.reject(id, { managerId: dto.managerId, reason: dto.reason });
+    return this.timeOffService.reject(id, {
+      managerId: dto.managerId,
+      reason: dto.reason,
+    });
   }
 
   @Delete(':id')

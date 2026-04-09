@@ -271,7 +271,60 @@ describe('TimeOffService', () => {
     });
   });
 
+  describe('findById()', () => {
+    it('returns the request when it exists', async () => {
+      const entity = { id: 'req-1', status: 'PENDING', daysRequested: 3, employeeId: 'emp-001', locationId: 'loc-nyc' };
+      mockTimeOffRepository.findById.mockResolvedValueOnce(entity);
+
+      const result = await timeOffService.findById('req-1');
+      expect(result).toEqual(entity);
+      expect(mockTimeOffRepository.findById).toHaveBeenCalledWith('req-1');
+    });
+
+    it('throws NotFoundException when not found', async () => {
+      const { NotFoundException } = await import('@nestjs/common');
+      mockTimeOffRepository.findById.mockResolvedValueOnce(null);
+
+      await expect(timeOffService.findById('nonexistent')).rejects.toBeInstanceOf(NotFoundException);
+    });
+  });
+
+  describe('findAll()', () => {
+    it('returns paginated result with correct shape { data, total, page, limit }', async () => {
+      const rows = [
+        { id: 'req-1', status: 'PENDING', employeeId: 'emp-001', locationId: 'loc-nyc', daysRequested: 2 },
+        { id: 'req-2', status: 'APPROVED', employeeId: 'emp-001', locationId: 'loc-nyc', daysRequested: 3 },
+      ];
+      mockTimeOffRepository.findByFilters.mockResolvedValueOnce(rows);
+      mockTimeOffRepository.countByFilters.mockResolvedValueOnce(2);
+
+      const result = await timeOffService.findAll({ employeeId: 'emp-001', page: 2, limit: 10 });
+
+      expect(result.data).toEqual(rows);
+      expect(result.total).toBe(2);
+      expect(result.page).toBe(2);
+      expect(result.limit).toBe(10);
+    });
+
+    it('defaults to page=1, limit=20 when not specified', async () => {
+      mockTimeOffRepository.findByFilters.mockResolvedValueOnce([]);
+      mockTimeOffRepository.countByFilters.mockResolvedValueOnce(0);
+
+      const result = await timeOffService.findAll({});
+
+      expect(result.page).toBe(1);
+      expect(result.limit).toBe(20);
+    });
+  });
+
   describe('reject()', () => {
+    it('throws NotFoundException when request does not exist', async () => {
+      const { NotFoundException } = await import('@nestjs/common');
+      mockTimeOffRepository.findById.mockResolvedValueOnce(null);
+
+      await expect(timeOffService.reject('nonexistent', { managerId: 'mgr-1' })).rejects.toBeInstanceOf(NotFoundException);
+    });
+
     it('throws ConflictException when request is not PENDING', async () => {
       const { ConflictException } = await import('@nestjs/common');
 
@@ -325,6 +378,13 @@ describe('TimeOffService', () => {
   });
 
   describe('cancel()', () => {
+    it('throws NotFoundException when request does not exist', async () => {
+      const { NotFoundException } = await import('@nestjs/common');
+      mockTimeOffRepository.findById.mockResolvedValueOnce(null);
+
+      await expect(timeOffService.cancel('nonexistent')).rejects.toBeInstanceOf(NotFoundException);
+    });
+
     it('throws ConflictException when request is APPROVED (cannot undo approvals)', async () => {
       const { ConflictException } = await import('@nestjs/common');
 

@@ -7,11 +7,15 @@ import { RequestStatus } from '../common/enums';
 @Injectable()
 export class BalanceRepository {
   constructor(
-    @InjectRepository(BalanceEntity) private readonly repo: Repository<BalanceEntity>,
+    @InjectRepository(BalanceEntity)
+    private readonly repo: Repository<BalanceEntity>,
     private readonly entityManager: EntityManager,
   ) {}
 
-  async findByEmployeeLocation(employeeId: string, locationId: string): Promise<BalanceEntity | null> {
+  async findByEmployeeLocation(
+    employeeId: string,
+    locationId: string,
+  ): Promise<BalanceEntity | null> {
     return this.repo.findOne({ where: { employeeId, locationId } });
   }
 
@@ -22,12 +26,15 @@ export class BalanceRepository {
     if (existing) {
       Object.assign(existing, data);
       await this.repo.save(existing);
-    } else {
-      await this.repo.save(this.repo.create(data));
+      return;
     }
+    await this.repo.save(this.repo.create(data));
   }
 
-  async findPendingDaysForEmployeeLocation(employeeId: string, locationId: string): Promise<number> {
+  async findPendingDaysForEmployeeLocation(
+    employeeId: string,
+    locationId: string,
+  ): Promise<number> {
     const result = await this.entityManager
       .createQueryBuilder()
       .select('COALESCE(SUM(tor.daysRequested), 0)', 'total')
