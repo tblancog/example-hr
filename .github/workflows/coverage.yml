@@ -1,0 +1,65 @@
+name: Coverage Badge
+
+on: [push]
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - run: npm install -g pnpm && pnpm install
+
+      - run: pnpm test:coverage
+
+      - name: Generate coverage badge
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const coverage = JSON.parse(fs.readFileSync('coverage/coverage-final.json', 'utf8'));
+
+            let totalLines = 0, coveredLines = 0;
+            for (const file of Object.values(coverage)) {
+              for (const line of Object.values(file.l || {})) {
+                totalLines++;
+                if (line > 0) coveredLines++;
+              }
+            }
+            const percent = Math.round((coveredLines / totalLines) * 100);
+
+            const color = percent >= 85 ? '28a745' : percent >= 75 ? 'ffc107' : 'dc3545';
+            const badge = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="120" height="20">
+              <linearGradient id="b" x2="0" y2="100%">
+                <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
+                <stop offset="1" stop-opacity=".1"/>
+              </linearGradient>
+              <clipPath id="a">
+                <rect width="120" height="20" rx="3"/>
+              </clipPath>
+              <g clip-path="url(#a)">
+                <path fill="#555" d="M0 0h84v20H0z"/>
+                <path fill="#${color}" d="M84 0h36v20H84z"/>
+                <path fill="url(#b)" d="M0 0h120v20H0z"/>
+              </g>
+              <g fill="#fff" text-anchor="middle" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-size="11">
+                <text x="42" y="15" fill="#010101" fill-opacity=".3">coverage</text>
+                <text x="42" y="14">coverage</text>
+                <text x="101" y="15" fill="#010101" fill-opacity=".3">${percent}%</text>
+                <text x="101" y="14">${percent}%</text>
+              </g>
+            </svg>`;
+
+            fs.writeFileSync('coverage-badge.svg', badge);
+
+      - name: Commit badge
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add coverage-badge.svg
+          git commit -m "chore: update coverage badge" || true
+          git push

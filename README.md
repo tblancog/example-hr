@@ -1,5 +1,7 @@
 # examplehr-time-off — ExampleHR Take-Home Exercise
 
+![Coverage](coverage-badge.svg)
+
 A NestJS + TypeORM microservice that manages employee time-off requests with HCM (Human Capital Management) integration.
 
 ---
