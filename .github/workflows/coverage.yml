@@ -2,6 +2,9 @@ name: Coverage Badge
 
 on: [push]
 
+permissions:
+  contents: write
+
 jobs:
   coverage:
     runs-on: ubuntu-latest
@@ -23,14 +26,17 @@ jobs:
             const fs = require('fs');
             const coverage = JSON.parse(fs.readFileSync('coverage/coverage-final.json', 'utf8'));
 
-            let totalLines = 0, coveredLines = 0;
+            let totalStatements = 0, coveredStatements = 0;
             for (const file of Object.values(coverage)) {
-              for (const line of Object.values(file.l || {})) {
-                totalLines++;
-                if (line > 0) coveredLines++;
+              const counters = file.s || file.l || {};
+              for (const hits of Object.values(counters)) {
+                totalStatements++;
+                if (hits > 0) coveredStatements++;
               }
             }
-            const percent = Math.round((coveredLines / totalLines) * 100);
+            const percent = totalStatements > 0
+              ? Math.round((coveredStatements / totalStatements) * 100)
+              : 0;
 
             const color = percent >= 85 ? '28a745' : percent >= 75 ? 'ffc107' : 'dc3545';
             const badge = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="120" height="20">
