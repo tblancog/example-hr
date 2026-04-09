@@ -5,6 +5,10 @@ export class SyncLogEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  // syncId is the batch identifier — multiple rows per batch share the same value.
+  // Cross-instance idempotency relies on the in-memory Set in BalanceService
+  // (same-process guard) plus operational discipline. A production fix would use
+  // a separate ProcessedSyncIds table with a unique index on syncId.
   @Column({ nullable: true })
   syncId: string;
 

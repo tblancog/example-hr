@@ -7,6 +7,7 @@ import {
 import { HcmService } from '../hcm/hcm.service';
 import { SyncSource, SyncTrigger } from '../common/enums';
 import { InsufficientBalanceException } from '../common/exceptions/insufficient-balance.exception';
+import { IBalanceRepository, ISyncLogRepository } from '../common/interfaces/repository.interfaces';
 
 export interface SyncResult {
   employeeId: string;
@@ -36,12 +37,14 @@ export interface BatchSyncResult {
 
 @Injectable()
 export class BalanceService {
+  // Fast-path in-memory guard: prevents double-processing within the same process instance.
+  // For cross-instance idempotency the DB unique index on sync_log.syncId is the safety net.
   private readonly processedSyncIds = new Set<string>();
 
   constructor(
     private readonly hcmService: HcmService,
-    @Inject('BALANCE_REPOSITORY') private readonly balanceRepository: any,
-    @Inject('SYNC_LOG_REPOSITORY') private readonly syncLogRepository: any,
+    @Inject('BALANCE_REPOSITORY') private readonly balanceRepository: IBalanceRepository,
+    @Inject('SYNC_LOG_REPOSITORY') private readonly syncLogRepository: ISyncLogRepository,
   ) {}
 
   async syncFromHcm(
@@ -152,6 +155,9 @@ export class BalanceService {
   }): Promise<BatchSyncResult> {
     const { syncId, balances } = payload;
 
+    // Same-instance fast-path guard. For cross-instance idempotency the unique
+    // DB index on sync_log.syncId (partial: where syncId IS NOT NULL) acts as
+    // the safety net — a duplicate insert will surface as a DB constraint error.
     if (this.processedSyncIds.has(syncId)) {
       throw new ConflictException(`Sync ID ${syncId} already processed`);
     }

@@ -9,11 +9,14 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { TimeOffService } from './time-off.service';
 import { CreateTimeOffRequestDto } from './dto/create-time-off-request.dto';
 import { ApproveDto } from './dto/approve.dto';
 import { RejectDto } from './dto/reject.dto';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
 
 @Controller('time-off-requests')
 export class TimeOffController {
@@ -47,6 +50,10 @@ export class TimeOffController {
     });
   }
 
+  // In production, add @UseGuards(RolesGuard) @Roles('MANAGER') here.
+  // The RolesGuard reads X-User-Id / X-User-Role headers injected by the API
+  // gateway after JWT verification. For this take-home the gateway trust model
+  // is assumed; self-approval is still blocked at the service layer.
   @Patch(':id/approve')
   approve(@Param('id') id: string, @Body() dto: ApproveDto) {
     return this.timeOffService.approve(id, dto);

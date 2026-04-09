@@ -4,10 +4,12 @@ import {
   BadRequestException,
   ConflictException,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { BalanceService } from '../balance/balance.service';
 import { RequestStatus } from '../common/enums';
 import { TimeOffRequestEntity } from './time-off.entity';
+import { ITimeOffRepository, TimeOffFilters } from '../common/interfaces/repository.interfaces';
 
 interface CreateDto {
   employeeId: string;
@@ -18,13 +20,7 @@ interface CreateDto {
   note?: string;
 }
 
-interface FindAllFilters {
-  employeeId?: string;
-  locationId?: string;
-  status?: string;
-  page?: number;
-  limit?: number;
-}
+const MAX_PAGE_LIMIT = 100;
 
 function computeDays(startDate: string, endDate: string): number {
   const start = new Date(startDate).getTime();
@@ -34,11 +30,13 @@ function computeDays(startDate: string, endDate: string): number {
 
 @Injectable()
 export class TimeOffService {
-  // Serializes concurrent create calls per employee+location to prevent race conditions
+  // Serializes concurrent create calls per employee+location to prevent overlap race conditions.
   private readonly createQueue = new Map<string, Promise<void>>();
+  // Serializes concurrent approve calls per employee+location to prevent TOCTOU balance races.
+  private readonly approveQueue = new Map<string, Promise<void>>();
 
   constructor(
-    @Inject('TIME_OFF_REPOSITORY') private readonly timeOffRepository: any,
+    @Inject('TIME_OFF_REPOSITORY') private readonly timeOffRepository: ITimeOffRepository,
     private readonly balanceService: BalanceService,
   ) {}
 
@@ -96,16 +94,40 @@ export class TimeOffService {
       );
     }
 
-    await this.balanceService.checkAndDeductBalance(
-      request.employeeId,
-      request.locationId,
-      request.daysRequested,
+    // Prevent self-approval: the acting manager must not be the requesting employee.
+    if (dto.managerId === request.employeeId) {
+      throw new ForbiddenException('Employees cannot approve their own time-off requests');
+    }
+
+    // Serialize concurrent approvals for the same employee+location to prevent
+    // TOCTOU races between the HCM GET balance check and the HCM SET deduction.
+    // HCM's atomic SET is the multi-node safety net; this queue is the single-node guard.
+    const key = `${request.employeeId}:${request.locationId}`;
+    const current = this.approveQueue.get(key) ?? Promise.resolve();
+    let release!: () => void;
+    this.approveQueue.set(
+      key,
+      new Promise<void>((res) => {
+        release = res;
+      }),
     );
 
-    return this.timeOffRepository.update(id, {
-      status: RequestStatus.APPROVED,
-      managerId: dto.managerId,
-    });
+    try {
+      await current;
+
+      await this.balanceService.checkAndDeductBalance(
+        request.employeeId,
+        request.locationId,
+        request.daysRequested,
+      );
+
+      return this.timeOffRepository.update(id, {
+        status: RequestStatus.APPROVED,
+        managerId: dto.managerId,
+      });
+    } finally {
+      release();
+    }
   }
 
   async reject(
@@ -150,16 +172,16 @@ export class TimeOffService {
     return request;
   }
 
-  async findAll(filters: FindAllFilters): Promise<{
+  async findAll(filters: TimeOffFilters): Promise<{
     data: TimeOffRequestEntity[];
     total: number;
     page: number;
     limit: number;
   }> {
     const page = filters.page ?? 1;
-    const limit = filters.limit ?? 20;
+    const limit = Math.min(filters.limit ?? 20, MAX_PAGE_LIMIT);
     const [data, total] = await Promise.all([
-      this.timeOffRepository.findByFilters(filters),
+      this.timeOffRepository.findByFilters({ ...filters, limit }),
       this.timeOffRepository.countByFilters(filters),
     ]);
     return { data, total, page, limit };

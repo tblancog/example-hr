@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsEnum, IsOptional, IsDateString } from 'class-validator';
+import { IsString, IsNotEmpty, IsEnum, IsOptional, IsDateString, MaxLength } from 'class-validator';
 import { TimeOffType } from '../../common/enums';
 
 export class CreateTimeOffRequestDto {
@@ -21,5 +21,6 @@ export class CreateTimeOffRequestDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(500)
   note?: string;
 }

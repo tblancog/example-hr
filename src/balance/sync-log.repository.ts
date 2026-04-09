@@ -10,4 +10,8 @@ export class SyncLogRepository {
   async insert(data: Partial<SyncLogEntity>): Promise<void> {
     await this.repo.save(this.repo.create(data));
   }
+
+  async findBySyncId(syncId: string): Promise<SyncLogEntity | null> {
+    return this.repo.findOne({ where: { syncId } });
+  }
 }
